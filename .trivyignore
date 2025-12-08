@@ -1,0 +1,5 @@
+# h11 vulnerability - cannot bump to 0.16.0 due to httpcore constraint (needs h11<0.15)
+CVE-2025-43859
+
+# Starlette vulnerability - cannot bump due to fastapi constraint (fastapi 0.115.8 needs starlette<0.46)
+CVE-2025-62727
