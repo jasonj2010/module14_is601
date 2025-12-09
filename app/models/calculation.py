@@ -11,7 +11,8 @@ It demonstrates several advanced patterns:
 4. Single Responsibility Principle - Each calculation type does one thing
 
 These models are designed for a calculator application that supports
-basic mathematical operations: addition, subtraction, multiplication, and division.
+basic mathematical operations: addition, subtraction, multiplication,
+division, and exponentiation.
 """
 
 from datetime import datetime
@@ -20,8 +21,9 @@ from typing import List
 from sqlalchemy import Column, String, DateTime, ForeignKey, JSON, Float
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, declared_attr
-from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.ext.declarative import declared_attr  # kept to match original structure
 from app.database import Base
+
 
 class AbstractCalculation:
     """
@@ -34,7 +36,7 @@ class AbstractCalculation:
     Design Pattern: Template Method - Defines the skeleton of the calculation
     algorithm in a method, deferring some steps to subclasses.
     """
-    
+
     @declared_attr
     def __tablename__(cls):
         """
@@ -42,7 +44,7 @@ class AbstractCalculation:
         
         Using a single table for all calculation types (single table inheritance).
         """
-        return 'calculations'
+        return "calculations"
 
     @declared_attr
     def id(cls):
@@ -56,10 +58,10 @@ class AbstractCalculation:
         - Improves security (not guessable)
         """
         return Column(
-            UUID(as_uuid=True), 
-            primary_key=True, 
+            UUID(as_uuid=True),
+            primary_key=True,
             default=uuid.uuid4,  # Auto-generate UUIDs
-            nullable=False
+            nullable=False,
         )
 
     @declared_attr
@@ -71,10 +73,10 @@ class AbstractCalculation:
         calculations will also be deleted (referential integrity).
         """
         return Column(
-            UUID(as_uuid=True), 
-            ForeignKey('users.id', ondelete='CASCADE'),
+            UUID(as_uuid=True),
+            ForeignKey("users.id", ondelete="CASCADE"),
             nullable=False,
-            index=True  # Index for faster queries filtering by user_id
+            index=True,  # Index for faster queries filtering by user_id
         )
 
     @declared_attr
@@ -86,9 +88,9 @@ class AbstractCalculation:
         when loading records from the database.
         """
         return Column(
-            String(50), 
+            String(50),
             nullable=False,
-            index=True  # Index for faster queries filtering by type
+            index=True,  # Index for faster queries filtering by type
         )
 
     @declared_attr
@@ -99,8 +101,8 @@ class AbstractCalculation:
         Using JSON type allows flexible storage of any number of inputs.
         """
         return Column(
-            JSON, 
-            nullable=False
+            JSON,
+            nullable=False,
         )
 
     @declared_attr
@@ -113,7 +115,7 @@ class AbstractCalculation:
         """
         return Column(
             Float,
-            nullable=True
+            nullable=True,
         )
 
     @declared_attr
@@ -124,9 +126,9 @@ class AbstractCalculation:
         Automatically set to the current time when inserted.
         """
         return Column(
-            DateTime, 
+            DateTime,
             default=datetime.utcnow,
-            nullable=False
+            nullable=False,
         )
 
     @declared_attr
@@ -137,10 +139,10 @@ class AbstractCalculation:
         Automatically updated to the current time when the record changes.
         """
         return Column(
-            DateTime, 
+            DateTime,
             default=datetime.utcnow,
             onupdate=datetime.utcnow,
-            nullable=False
+            nullable=False,
         )
 
     @declared_attr
@@ -154,7 +156,9 @@ class AbstractCalculation:
         return relationship("User", back_populates="calculations")
 
     @classmethod
-    def create(cls, calculation_type: str, user_id: uuid.UUID, inputs: List[float]) -> "Calculation":
+    def create(
+        cls, calculation_type: str, user_id: uuid.UUID, inputs: List[float]
+    ) -> "Calculation":
         """
         Factory method to create calculation instances of the appropriate type.
         
@@ -174,10 +178,12 @@ class AbstractCalculation:
             ValueError: If the calculation_type is not supported
         """
         calculation_classes = {
-            'addition': Addition,
-            'subtraction': Subtraction,
-            'multiplication': Multiplication,
-            'division': Division,
+            "addition": Addition,
+            "subtraction": Subtraction,
+            "multiplication": Multiplication,
+            "division": Division,
+            "exponent": Exponent,
+            "power": Exponent,  # optional alias
         }
         calculation_class = calculation_classes.get(calculation_type.lower())
         if not calculation_class:
@@ -208,6 +214,7 @@ class AbstractCalculation:
         """
         return f"<Calculation(type={self.type}, inputs={self.inputs})>"
 
+
 class Calculation(Base, AbstractCalculation):
     """
     Base calculation model that inherits from SQLAlchemy Base and AbstractCalculation.
@@ -219,11 +226,13 @@ class Calculation(Base, AbstractCalculation):
     The concrete calculation subclasses (Addition, Subtraction, etc.) will
     inherit from this class and specify their own polymorphic identities.
     """
+
     __mapper_args__ = {
         "polymorphic_on": "type",
         "polymorphic_identity": "calculation",
-        #"with_polymorphic": "*"  # Eager load all subclass columns (commented out)
+        # "with_polymorphic": "*"  # Eager load all subclass columns (commented out)
     }
+
 
 class Addition(Calculation):
     """
@@ -234,6 +243,7 @@ class Addition(Calculation):
         [1, 2, 3] -> 1 + 2 + 3 = 6
         [10, -5] -> 10 + (-5) = 5
     """
+
     __mapper_args__ = {"polymorphic_identity": "addition"}
 
     def get_result(self) -> float:
@@ -254,6 +264,7 @@ class Addition(Calculation):
             raise ValueError("Inputs must be a list with at least two numbers.")
         return sum(self.inputs)
 
+
 class Subtraction(Calculation):
     """
     Subtraction calculation subclass.
@@ -263,6 +274,7 @@ class Subtraction(Calculation):
         [10, 3, 2] -> 10 - 3 - 2 = 5
         [100, 50, 25] -> 100 - 50 - 25 = 25
     """
+
     __mapper_args__ = {"polymorphic_identity": "subtraction"}
 
     def get_result(self) -> float:
@@ -286,6 +298,7 @@ class Subtraction(Calculation):
             result -= value
         return result
 
+
 class Multiplication(Calculation):
     """
     Multiplication calculation subclass.
@@ -295,6 +308,7 @@ class Multiplication(Calculation):
         [2, 3, 4] -> 2 * 3 * 4 = 24
         [10, 0.5] -> 10 * 0.5 = 5
     """
+
     __mapper_args__ = {"polymorphic_identity": "multiplication"}
 
     def get_result(self) -> float:
@@ -316,6 +330,41 @@ class Multiplication(Calculation):
             result *= value
         return result
 
+
+class Exponent(Calculation):
+    """
+    Exponent calculation subclass.
+    
+    Implements exponentiation using the first value as the base
+    and the second value as the exponent.
+    
+    Examples:
+        [2, 3] -> 2 ** 3 = 8
+        [9, 0.5] -> 9 ** 0.5 = 3
+    """
+
+    __mapper_args__ = {"polymorphic_identity": "exponent"}
+
+    def get_result(self) -> float:
+        """
+        Calculate base raised to the power of exponent.
+        
+        Expects exactly two inputs: [base, exponent].
+        
+        Returns:
+            float: base ** exponent
+            
+        Raises:
+            ValueError: If inputs are not a list or do not contain exactly two numbers
+        """
+        if not isinstance(self.inputs, list):
+            raise ValueError("Inputs must be a list of numbers.")
+        if len(self.inputs) != 2:
+            raise ValueError("Exponent calculation requires exactly two numbers: base and exponent.")
+        base, exponent = self.inputs
+        return float(base) ** float(exponent)
+
+
 class Division(Calculation):
     """
     Division calculation subclass.
@@ -328,6 +377,7 @@ class Division(Calculation):
     Special case handling:
         - Division by zero raises a ValueError
     """
+
     __mapper_args__ = {"polymorphic_identity": "division"}
 
     def get_result(self) -> float:

@@ -118,3 +118,27 @@ def divide(a: Number, b: Number) -> float:
     # Perform division of a by b and return the result as a float
     result = a / b
     return result
+
+def power(a: Number, b: Number) -> Number:
+    """
+    Raise 'a' to the power of 'b' and return the result.
+
+    Parameters:
+    - a (int or float): The base number.
+    - b (int or float): The exponent.
+
+    Returns:
+    - int or float: The result of a ** b.
+
+    Example:
+    >>> power(2, 3)
+    8
+    >>> power(9, 0.5)
+    3.0
+
+    Notes:
+    - Python handles fractional exponents (roots) natively.
+    - Very large exponents may produce OverflowError; caller should handle.
+    """
+    return a ** b
+
